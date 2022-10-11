@@ -1,0 +1,18 @@
+
+// extracting candidate dev_skills
+candidate_info = zoho.recruit.getRecordById("Candidates",cand_id);
+dev_skills = candidate_info.getJSON("Developer Skills");
+updated_skills = dev_skills.toList(";");
+// info updated_skills;
+// extract each skill and update
+for each  skill in updated_skills
+{
+	/*mp = Map();
+	mp.put("Skill_Set",ifnull(candidate_info.get("Developer_Skills"),""));
+	updateResp = zoho.recruit.updateRecord("Candidates",cand_id,mp);
+	info updateResp;*/
+	// mapping each skill to the og. skill set field
+	map_skills = {"Skill Set":skill};
+	update_resp = zoho.recruit.updateRecord("Candidates",cand_id,map_skills);
+	info update_resp;
+}
