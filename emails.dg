@@ -1,0 +1,29 @@
+// send email about the candidate to geoffry@ziphire.hr
+mailSUBJECT = "DELUGE APPLICATION ALERT";
+mailID = "geoffry@ziphire.hr";
+ini_applicationLINK = "https://recruit.zoho.com/recruit/org777718150/EntityInfo.do?module=Candidates&id";
+applicationLINK = ini_applicationLINK.concat("=").concat(application_id).concat("&submodule=Applications");
+// send mail
+sendmail
+[
+    from :zoho.adminuserid
+    to :mailID
+    subject :mailSUBJECT
+    message :"<div style='background-color: rgb(255, 255, 255); margin: auto; font: normal 14px lucida grande, lucida sans, lucida sans unicode, arial, helvetica, verdana, sans-serif; border: 1px solid rgb(227, 227, 227); width: 600px; padding: 30px'><div style='font-size: 21px; color: rgb(34, 34, 34); float: left; padding-top: 10px; width: 65%'><span class='size' style='font-size:16px'>Dear Kevin, </span> <br></div><div style='color: rgb(118, 118, 118); line-height: 27px'><div style='color: rgb(68, 68, 68)'><div style='padding-top: 24px; font-size: 15px'><div><br></div><div><b><span class='size' style='font-size: 16px'>" + full_name + " (" + appID + ") </span></b><span class='size' style='font-size: 16px'> has applied to another role, </span><b><span class='size' style='font-size: 16px'> " + job + " (" + job_id + ") </span></b><span class='size' style='font-size: 16px'>. Please click on the below button to access the application page on Zoho Recruit.</span> <br></div><div><br></div><div class='align-center' style='text-align: center;'><span class='size' style='font-size:16px'><a href=" + applicationLINK + " style='display: inline-block; padding: 5px; border-radius: 8px; background-color: rgb(37, 211, 102); color: rgb(255, 255, 255); text-decoration: none; font-family: sans-serif; font-size: 16px' target='_blank'><b>ACCESS APPLICATION </b> </a> </span> <br></div><div class='align-center' style='text-align: center;'><br></div><div class='align-left' style='text-align: left;'><span class='size' style='font-size: 16px'>Please send test to the above user.</span> <br></div><div class='align-left' style='text-align: left;'><br></div><div class='align-left' style='text-align: left;'><br></div><div class='align-left' style='text-align: left;'><br></div><div><span class='size' style='font-size:16px'>Best Regards, </span> <br></div><div><span class='size' style='font-size:16px'>Ziphire HR </span> <br></div></div></div></div></div><div><br></div>"
+]
+
+// send email to candidate to update their WhatsApp number
+ini_associateLINK = "https://recruit.zoho.com/recruit/v2/Candidates";
+associateLINK = ini_associateLINK.concat("/").concat(cand_id).concat("/associate");
+
+fromMailID = "jobs@ziphire.me";
+tomailID = email;
+mailSubject = "Ziphire HR - Update WhatsApp Information!";
+candidate_portal = "https://ziphire.zohorecruit.com/candidateportal";
+sendmail
+[
+    from: zoho.adminuserid
+    to: tomailID
+    subject: mailSubject
+    message: "<div style='background-color: rgb(255, 255, 255); margin: auto; font: normal 14px lucida grande, lucida sans, lucida sans unicode, arial, helvetica, verdana, sans-serif; border: 1px solid rgb(227, 227, 227); width: 600px; padding: 30px'><div style='font-size: 21px; color: rgb(34, 34, 34); float: left; padding-top: 10px; width: 65%'><span class='size' style='font-size:16px'>Dear " + user_name + ", </span> <br></div><div style='color: rgb(118, 118, 118); line-height: 27px'><div style='color: rgb(68, 68, 68)'><div style='padding-top: 24px; font-size: 15px'><div><br></div><div>This email is to inform you that the WhatsApp number, <b> " + phNo + " </b> , that you had used to register on Ziphire HR is incorrect and you may not receive your application updates and other important information that may be beneficial for you. <br></div><div><br></div><div>We are moving on towards alerting candidates about their application updates via WhatsApp. Please update your <b> WhatsApp Information </b> by logging into your <b> Candidate Portal&nbsp; </b> and entering information <b> &nbsp; </b> in the following format, <br></div><div><br></div><div><b>Country Code:&nbsp; </b> Choose the appropriate country code from the list of codes provided. <br></div><div><br></div><div><b>Number:&nbsp; </b> Enter the registered WhatsApp number without the country code. <br></div><div><br></div><div>Please log into your portal using the below button.<br></div><div><br></div><div class='align-center' style='text-align: center;'><span class='size' style='font-size:16px'><a href=" + candidate_portal + " style='display: inline-block; padding: 5px; border-radius: 8px; background-color: rgb(37, 211, 102); color: rgb(255, 255, 255); text-decoration: none; font-family: sans-serif; font-size: 16px' target='_blank'><b>CANDIDATE PORTAL </b> </a> </span> <br></div><div class='align-center' style='text-align: center;'><br></div><div class='align-center' style='text-align: center;'><br></div><div class='align-center' style='text-align: center;'><br></div><div><span class='size' style='font-size:16px'>Best Regards, </span> <br></div><div><span class='size' style='font-size:16px'>Ziphire HR </span> <br></div></div></div></div></div><div><br></div>"
+]
