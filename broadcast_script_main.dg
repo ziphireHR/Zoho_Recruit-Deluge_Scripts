@@ -1,0 +1,500 @@
+// MAIN BROADCAST SCRIPT
+// AUTHOR: Geoffry George Mathew, EMAIL: geoffry@ziphire.hr, DATE: 21/9/2022
+// BEGIN
+//
+// fetch application ID
+application_id = app_id;
+link_header = "https://recruit.zoho.com/recruit/v2/Applications";
+application_link = link_header.concat("/").concat(application_id);
+//info application_link;
+//
+//
+// pass request url to Zoho API
+app_response = invokeurl
+[
+	url :application_link
+	type :GET
+	connection:"zohorecruitapp"
+];
+//info app_response;
+//
+//
+// fetch important keys
+appResponse = app_response.getJSON("data");
+// fetch basic details
+phone_no = appResponse.getJSON("WA_Number_API");
+phNo = getAlphaNumeric(phone_no);
+user_name = appResponse.getJSON("First_Name").replaceAll(" ","+");
+full_name = appResponse.getJSON("Candidate_Full_Name");
+email = appResponse.getJSON("Email");
+// fetch job details
+job_id = appResponse.getJSON("Job_Opening_ID");
+job = appResponse.getJSON("Job_Opening_Name");
+user_job = replaceAll(job," ","+");
+// append sent status with the job id
+initialSTATUS = "SENT";
+getSUFFIX = job_id.getSuffix("ZR");
+getINDUSTRY = appResponse.getJSON("Job_Industry");
+msgSTATUS = initialSTATUS.concat(getSUFFIX).concat("_").concat(getINDUSTRY).toString();
+// fetch candidate ID for verification
+cand_id = appResponse.getJSON("LEADID");
+appID = appResponse.getJSON("Application_ID");
+linkHeader = "https://recruit.zoho.com/recruit/v2/Candidates";
+candidate_link = linkHeader.concat("/").concat(cand_id);
+//
+//
+// check if WA number is not null
+if (phNo != null)
+{
+	//verify phNO using whatsapp to check if the number is valid or not
+	//if the number is valid proceed with the below step and change the WA_NUM_STATUS to valid
+	//if the number is not valid change the WA_NUM_STATUS to invalid
+	//also check if the status code is 200 and if it is not, send an email saying the same
+
+	// prepare number for verification
+	waVerify = ("+").concat(phNo);
+	// pass number to Zoho API
+	paramMap = Map();
+	blocking = "wait";
+	number = waVerify;
+	contactArr = {number};
+	force_check = true;
+	paramMap.put("blocking",blocking);
+	paramMap.put("contacts",contactArr);
+	paramMap.put("force_check",force_check);
+	//info paramMap.toString();
+	ver_response = invokeUrl
+	[
+		url: "https://waba.360dialog.io/v1/contacts"
+		type: POST
+		parameters: paramMap.toString()
+		connection: "dialogverify"
+		content-type:"application/json"
+		detailed:true
+	];
+	//
+	//
+	// fetch important keys
+	verResponseCode = ver_response.getJSON("responseCode");
+	verResponse_main = ver_response.getJSON("responseText");
+	verResponse_main_contacts = verResponse_main.getJSON("contacts");
+	numStatus = verResponse_main_contacts.getJSON("status");
+
+	if (verResponseCode == 200)
+	{
+		if (numStatus == "valid")
+		{
+			// change EM_MSG_STATUS to null, WA_NUM_STATUS to valid, BROADCAST_TYPE to WhatsApp
+			paramMap = Map();
+			status = {"EM_MSG_STATUS":"", "WA_NUM_STATUS":numStatus, "BROADCAST_TYPE":"WhatsApp"};
+			statusArr = {status};
+			paramMap.put("data",statusArr);
+			//info paramMap.toString();
+			response = invokeurl
+			[
+				url :candidate_link
+				type :PUT
+				parameters:paramMap.toString()
+				connection:"zohorecruitapp"
+				content-type:"application/json"
+			];
+			/*// change WA_NUM_STATUS to valid
+			paramMap = Map();
+			status = {"WA_NUM_STATUS":numStatus};
+			statusArr = {status};
+			paramMap.put("data",statusArr);
+			//info paramMap.toString();
+			response = invokeurl
+			[
+				url :candidate_link
+				type :PUT
+				parameters:paramMap.toString()
+				connection:"zohorecruitapp"
+				content-type:"application/json"
+			];*/
+			//
+			//
+			// BEGIN TRANSACTIONAL BROADCAST
+			// pass request url to Zoho API
+			cand_response = invokeurl
+			[
+				url :candidate_link
+				type :GET
+				connection:"zohorecruitapp"
+			];
+			//
+			//
+			// fetch important keys
+			candResponse = cand_response.getJSON("data");
+			waMSG = candResponse.getJSON("WA_MSG_STATUS");
+			if (waMSG != null)
+			{
+				waINDUSTRY = waMSG.getSuffix("JOB_");		
+			}
+			//
+			//
+			if (waMSG == null)
+			{
+				// pass values to engati API
+				engati_response = invokeurl
+				[
+					url :"https://api.engati.com/bot-api/v1.0/customer/67975/bot/6b92dfc86e1e4a17/flow/EA96C8E58482410B8A4ED1858741F354?api_user_name=" + user_name + "&user.user_name=" + phNo
+					type :POST
+					detailed:true
+					connection:"api_trigger"
+				];
+				engatiResponse = engati_response.getJSON("responseCode");
+				//info engati_response;
+				if (engatiResponse == 200)
+				{
+					paramMap = Map();
+					status = {"WA_MSG_STATUS":msgSTATUS};
+					statusArr = {status};
+					paramMap.put("data",statusArr);
+					//info paramMap.toString();
+					response = invokeurl
+					[
+						url :candidate_link
+						type :PUT
+						parameters:paramMap.toString()
+						connection:"zohorecruitapp"
+						content-type:"application/json"
+					];
+				}
+			}
+			else if (waINDUSTRY == getINDUSTRY)
+			{
+				// pass values to engati API
+				engati_response = invokeurl
+				[
+					url :"https://api.engati.com/bot-api/v1.0/customer/67975/bot/6b92dfc86e1e4a17/flow/AF86431251264794A4F18B83FC75909B?api_user_name=" + user_name + "&user.user_name=" + phNo + "&applied_job=" + user_job
+					type :POST
+					detailed:true
+					connection:"api_trigger"
+				];
+				engatiResponse = engati_response.getJSON("responseCode");
+				//info engati_response;
+				if (engatiResponse == 200)
+				{
+					
+					paramMap = Map();
+					status = {"WA_MSG_STATUS":msgSTATUS};
+					statusArr = {status};
+					paramMap.put("data",statusArr);
+					//info paramMap.toString();
+					response = invokeurl
+					[
+						url :candidate_link
+						type :PUT
+						parameters:paramMap.toString()
+						connection:"zohorecruitapp"
+						content-type:"application/json"
+					];
+					
+				}
+			}
+			else if (waINDUSTRY != getINDUSTRY)
+			{
+				// pass values to engati API
+				engati_response = invokeurl
+				[
+					url :"https://api.engati.com/bot-api/v1.0/customer/67975/bot/6b92dfc86e1e4a17/flow/AF86431251264794A4F18B83FC75909B?api_user_name=" + user_name + "&user.user_name=" + phNo + "&applied_job=" + user_job
+					type :POST
+					detailed:true
+					connection:"api_trigger"
+				];
+				engatiResponse = engati_response.getJSON("responseCode");
+				//info engati_response;
+				if (engatiResponse == 200)
+				{
+					paramMap = Map();
+					status = {"WA_MSG_STATUS":msgSTATUS};
+					statusArr = {status};
+					paramMap.put("data",statusArr);
+					//info paramMap.toString();
+					response = invokeurl
+					[
+						url :candidate_link
+						type :PUT
+						parameters:paramMap.toString()
+						connection:"zohorecruitapp"
+						content-type:"application/json"
+					];
+				}
+			}
+		}
+		else if (numStatus == "invalid")
+		{
+			// change WA_MSG_STATUS to null, WA_NUM_STATUS to invalid, BROADCAST_TYPE to Email
+			paramMap = Map();
+			status = {"WA_MSG_STATUS":"", "WA_NUM_STATUS":numStatus, "BROADCAST_TYPE":"Email"};
+			statusArr = {status};
+			paramMap.put("data",statusArr);
+			//info paramMap.toString();
+			response = invokeurl
+			[
+				url :candidate_link
+				type :PUT
+				parameters:paramMap.toString()
+				connection:"zohorecruitapp"
+				content-type:"application/json"
+			];
+			/*// change WA_NUM_STATUS to invalid
+			paramMap = Map();
+			status = {"WA_NUM_STATUS":numStatus};
+			statusArr = {status};
+			paramMap.put("data",statusArr);
+			//info paramMap.toString();
+			response = invokeurl
+			[
+				url :candidate_link
+				type :PUT
+				parameters:paramMap.toString()
+				connection:"zohorecruitapp"
+				content-type:"application/json"
+			];*/
+			//
+			//
+			// SEND RESPECTIVE ACKNOWLEDGEMENT EMAIL
+			// pass request url to Zoho API
+			cand_response = invokeurl
+			[
+				url :candidate_link
+				type :GET
+				connection:"zohorecruitapp"
+			];
+			//
+			//
+			// fetch important keys
+			candResponse = cand_response.getJSON("data");
+			emMSG = candResponse.getJSON("EM_MSG_STATUS");
+			if (emMSG != null)
+			{
+				emINDUSTRY = emMSG.getSuffix("JOB_");
+			}
+			//
+			//
+			if (emMSG == null)
+			{	
+				paramMap = Map();
+				status = {"EM_MSG_STATUS":msgSTATUS};
+				statusArr = {status};
+				paramMap.put("data",statusArr);
+				//info paramMap.toString();
+				response = invokeurl
+				[
+					url :candidate_link
+					type :PUT
+					parameters:paramMap.toString()
+					connection:"zohorecruitapp"
+					content-type:"application/json"
+				];
+				//fromMailID = "jobs@ziphire.me";
+				tomailID = email;
+				mailSubject = "SCREENING INTERVIEW CALL! For the position of "+ job +"";
+				bookCall = "https://calendly.com/ziphire-hr/candidate-screening-call";
+				waBot = "https://wa.me/97338225544?text=Hi";
+				// send email
+				sendmail
+				[
+					from: "jobs@ziphire.me"
+					to: tomailID
+					subject: mailSubject
+					message: "<div style='background-color: rgb(255, 255, 255); margin: auto; font: normal 14px lucida grande, lucida sans, lucida sans unicode, arial, helvetica, verdana, sans-serif; border: 1px solid rgb(227, 227, 227); width: 600px; padding: 30px'><div style='color: rgb(118, 118, 118); line-height: 27px'><div style='color: rgb(68, 68, 68)'><div style='padding-top: 24px; font-size: 15px'><div><span class='size' style='font-size:16px'>Dear " + user_name + ", </span> <br></div><div><br></div><div><span class='size' style='font-size:16px'>We are delighted to extend an invitation for a screening call with you. </span> <span class='size' style='font-size:16px'> This screening call will help us to understand your profile in detail and help you in getting selected for jobs or projects on our platform. </span> <br></div><div><br></div><div><span class='size' style='font-size:16px'>Please note that the screening call would take place only <b> once </b> , no matter the number of jobs you have applied for or want to apply for in the future. </span> <br></div><div><br></div><div><span class='size' style='font-size:16px'>Please use the below button&nbsp; <span class='size' style='font-size:16px'> to book a call with our interviewer.&nbsp; </span> </span> <br></div><div><br></div><div style='text-align: center' class='align-center'><span class='size' style='font-size:16px'><a target='_blank' style='display: inline-block; padding: 5px; border-radius: 8px; background-color: rgb(37, 211, 102); color: rgb(255, 255, 255); text-decoration: none; font-family: sans-serif; font-size: 16px' href=" + bookCall +"><b>BOOK A CALL </b> </a> </span> <br></div><div style='text-align: center' class='align-center'><br></div><div style='text-align: left' class='align-left'><span class='size' style='font-size:16px'>To browse for more jobs and view the status of your applications, please use our Ziphire&nbsp; <a target='_blank' style='display: inline-block; padding: 5px; border-radius: 8px; background-color: rgb(37, 211, 102); color: rgb(255, 255, 255); text-decoration: none; font-family: sans-serif; font-size: 16px' href=" + waBot + "> <b> WhatsApp </b> </a> &nbsp;Bot. </span> <br></div><div style='text-align: left' class='align-left'><br></div><div style='text-align: left' class='align-left'><br></div><div style='text-align: left' class='align-left'><br></div><div style='text-align: left' class='align-left'><br></div><div><span class='size' style='font-size:16px'>Best Regards, </span> <br></div><div><span class='size' style='font-size:16px'>Ziphire HR </span> <br></div></div></div></div></div><div><br></div>"
+				]
+			}
+			else if (emINDUSTRY == getINDUSTRY)
+			{
+				paramMap = Map();
+				status = {"EM_MSG_STATUS":msgSTATUS};
+				statusArr = {status};
+				paramMap.put("data",statusArr);
+				//info paramMap.toString();
+				response = invokeurl
+				[
+					url :candidate_link
+					type :PUT
+					parameters:paramMap.toString()
+					connection:"zohorecruitapp"
+					content-type:"application/json"
+				];
+				//fromMailID = "jobs@ziphire.me";
+				tomailID = email;
+				mailSubject = "Application for the position of "+ job +"";
+				waBot = "https://wa.me/97338225544?text=Hi";
+				// send email
+				sendmail
+				[
+					from: "jobs@ziphire.me"
+					to: tomailID
+					subject: mailSubject
+					message: "<div style='background-color: rgb(255, 255, 255); margin: auto; font: normal 14px lucida grande, lucida sans, lucida sans unicode, arial, helvetica, verdana, sans-serif; border: 1px solid rgb(227, 227, 227); width: 600px; padding: 30px'><div style='color: rgb(118, 118, 118); line-height: 27px'><div style='color: rgb(68, 68, 68)'><div style='padding-top: 24px; font-size: 15px'><div><span class='size' style='font-size:16px'>Dear " + user_name + " <b> , </b> </span> <br></div><div><br></div><div><span class='size' style='font-size:16px'>Thank you for applying for the position of&nbsp; <b> " + job + " </b> <b> &nbsp; </b> from Ziphire HR, and this email is a confirmation that we have received your application. </span> <br></div><div><br></div><div>We hope that you have already attended a general screening interview. If you haven't, please check the mail of the first job you applied for on our platform. <br></div><div><br></div><div>We would be sending you another assessment test if you haven't already given a technical test for similar skills. We will be in touch with you for more updates either via email or WhatsApp. <br></div><div><br></div><div><span class='size' style='font-size:16px'>To browse for more jobs and view the status of your applications, please use our Ziphire&nbsp; <a target='_blank' style='display: inline-block; padding: 5px; border-radius: 8px; background-color: rgb(37, 211, 102); color: rgb(255, 255, 255); text-decoration: none; font-family: sans-serif; font-size: 16px' href=" + waBot + "> <b> WhatsApp </b> </a> &nbsp;Bot. </span> <br></div><div><br></div><div><br></div><div><br></div><div><br></div><div><span class='size' style='font-size:16px'>Best Regards, </span> <br></div><div><span class='size' style='font-size:16px'>Ziphire HR </span> <br></div></div></div></div></div><div><br></div>"
+				]
+			}
+			else if (emINDUSTRY != getINDUSTRY)
+			{
+				paramMap = Map();
+				status = {"EM_MSG_STATUS":msgSTATUS};
+				statusArr = {status};
+				paramMap.put("data",statusArr);
+				//info paramMap.toString();
+				response = invokeurl
+				[
+					url :candidate_link
+					type :PUT
+					parameters:paramMap.toString()
+					connection:"zohorecruitapp"
+					content-type:"application/json"
+				];
+				//fromMailID = "jobs@ziphire.me";
+				tomailID = email;
+				mailSubject = "Application for the position of "+ job +"";
+				waBot = "https://wa.me/97338225544?text=Hi";
+				// send email
+				sendmail
+				[
+					from: "jobs@ziphire.me"
+					to: tomailID
+					subject: mailSubject
+					message: "<div style='background-color: rgb(255, 255, 255); margin: auto; font: normal 14px lucida grande, lucida sans, lucida sans unicode, arial, helvetica, verdana, sans-serif; border: 1px solid rgb(227, 227, 227); width: 600px; padding: 30px'><div style='color: rgb(118, 118, 118); line-height: 27px'><div style='color: rgb(68, 68, 68)'><div style='padding-top: 24px; font-size: 15px'><div><span class='size' style='font-size:16px'>Dear " + user_name + " <b> , </b> </span> <br></div><div><br></div><div><span class='size' style='font-size:16px'>Thank you for applying for the position of&nbsp; <b> " + job + " </b> <b> &nbsp; </b> from Ziphire HR, and this email is a confirmation that we have received your application. </span> <br></div><div><br></div><div>We hope that you have already attended a general screening interview. If you haven't, please check the mail of the first job you applied for on our platform. <br></div><div><br></div><div>We would be sending you another assessment test if you haven't already given a technical test for similar skills. We will be in touch with you for more updates either via email or WhatsApp. <br></div><div><br></div><div><span class='size' style='font-size:16px'>To browse for more jobs and view the status of your applications, please use our Ziphire&nbsp; <a target='_blank' style='display: inline-block; padding: 5px; border-radius: 8px; background-color: rgb(37, 211, 102); color: rgb(255, 255, 255); text-decoration: none; font-family: sans-serif; font-size: 16px' href=" + waBot + "> <b> WhatsApp </b> </a> &nbsp;Bot. </span> <br></div><div><br></div><div><br></div><div><br></div><div><br></div><div><span class='size' style='font-size:16px'>Best Regards, </span> <br></div><div><span class='size' style='font-size:16px'>Ziphire HR </span> <br></div></div></div></div></div><div><br></div>"
+				]
+			}
+		}
+	}	
+}
+else if ( phNo == null)
+{	
+	// change WA_MSG_STATUS to null, WA_NUM_STATUS to NA, BROADCAST_TYPE to Email
+	paramMap = Map();
+	status = {"WA_MSG_STATUS":"", "WA_NUM_STATUS":"NA", "BROADCAST_TYPE":"Email"};
+	statusArr = {status};
+	paramMap.put("data",statusArr);
+	//info paramMap.toString();
+	response = invokeurl
+	[
+		url :candidate_link
+		type :PUT
+		parameters:paramMap.toString()
+		connection:"zohorecruitapp"
+		content-type:"application/json"
+	];
+	/*// change WA_NUM_STATUS to NA
+	paramMap = Map();
+	status = {"WA_NUM_STATUS":"NA"};
+	statusArr = {status};
+	paramMap.put("data",statusArr);
+	//info paramMap.toString();
+	response = invokeurl
+	[
+		url :candidate_link
+		type :PUT
+		parameters:paramMap.toString()
+		connection:"zohorecruitapp"
+		content-type:"application/json"
+	];*/
+	//
+	// SEND RESPECTIVE ACKNOWLEDGEMENT EMAIL
+	// pass request url to Zoho API
+	cand_response = invokeurl
+	[
+		url :candidate_link
+		type :GET
+		connection:"zohorecruitapp"
+	];
+	//
+	//
+	// fetch important keys
+	candResponse = cand_response.getJSON("data");
+	emMSG = candResponse.getJSON("EM_MSG_STATUS");
+	if (emMSG != null)
+	{
+		emINDUSTRY = emMSG.getSuffix("JOB_");
+	}
+	//
+	//
+	if (emMSG == null)
+	{	
+		paramMap = Map();
+		status = {"EM_MSG_STATUS":msgSTATUS};
+		statusArr = {status};
+		paramMap.put("data",statusArr);
+		//info paramMap.toString();
+		response = invokeurl
+		[
+			url :candidate_link
+			type :PUT
+			parameters:paramMap.toString()
+			connection:"zohorecruitapp"
+			content-type:"application/json"
+		];
+		//fromMailID = "jobs@ziphire.me";
+		tomailID = email;
+		mailSubject = "SCREENING INTERVIEW CALL! For the position of "+ job +"";
+		bookCall = "https://calendly.com/ziphire-hr/candidate-screening-call";
+		waBot = "https://wa.me/97338225544?text=Hi";
+		// send email
+		sendmail
+		[
+			from: "jobs@ziphire.me"
+			to: tomailID
+			subject: mailSubject
+			message: "<div style='background-color: rgb(255, 255, 255); margin: auto; font: normal 14px lucida grande, lucida sans, lucida sans unicode, arial, helvetica, verdana, sans-serif; border: 1px solid rgb(227, 227, 227); width: 600px; padding: 30px'><div style='color: rgb(118, 118, 118); line-height: 27px'><div style='color: rgb(68, 68, 68)'><div style='padding-top: 24px; font-size: 15px'><div><span class='size' style='font-size:16px'>Dear " + user_name + ", </span> <br></div><div><br></div><div><span class='size' style='font-size:16px'>We are delighted to extend an invitation for a screening call with you. </span> <span class='size' style='font-size:16px'> This screening call will help us to understand your profile in detail and help you in getting selected for jobs or projects on our platform. </span> <br></div><div><br></div><div><span class='size' style='font-size:16px'>Please note that the screening call would take place only <b> once </b> , no matter the number of jobs you have applied for or want to apply for in the future. </span> <br></div><div><br></div><div><span class='size' style='font-size:16px'>Please use the below button&nbsp; <span class='size' style='font-size:16px'> to book a call with our interviewer.&nbsp; </span> </span> <br></div><div><br></div><div style='text-align: center' class='align-center'><span class='size' style='font-size:16px'><a target='_blank' style='display: inline-block; padding: 5px; border-radius: 8px; background-color: rgb(37, 211, 102); color: rgb(255, 255, 255); text-decoration: none; font-family: sans-serif; font-size: 16px' href=" + bookCall +"><b>BOOK A CALL </b> </a> </span> <br></div><div style='text-align: center' class='align-center'><br></div><div style='text-align: left' class='align-left'><span class='size' style='font-size:16px'>To browse for more jobs and view the status of your applications, please use our Ziphire&nbsp; <a target='_blank' style='display: inline-block; padding: 5px; border-radius: 8px; background-color: rgb(37, 211, 102); color: rgb(255, 255, 255); text-decoration: none; font-family: sans-serif; font-size: 16px' href=" + waBot + "> <b> WhatsApp </b> </a> &nbsp;Bot. </span> <br></div><div style='text-align: left' class='align-left'><br></div><div style='text-align: left' class='align-left'><br></div><div style='text-align: left' class='align-left'><br></div><div style='text-align: left' class='align-left'><br></div><div><span class='size' style='font-size:16px'>Best Regards, </span> <br></div><div><span class='size' style='font-size:16px'>Ziphire HR </span> <br></div></div></div></div></div><div><br></div>"
+		]
+	}
+	else if (emINDUSTRY == getINDUSTRY)
+	{	
+		paramMap = Map();
+		status = {"EM_MSG_STATUS":msgSTATUS};
+		statusArr = {status};
+		paramMap.put("data",statusArr);
+		//info paramMap.toString();
+		response = invokeurl
+		[
+			url :candidate_link
+			type :PUT
+			parameters:paramMap.toString()
+			connection:"zohorecruitapp"
+			content-type:"application/json"
+		];
+		//fromMailID = "jobs@ziphire.me";
+		tomailID = email;
+		mailSubject = "Application for the position of "+ job +"";
+		waBot = "https://wa.me/97338225544?text=Hi";
+		// send email
+		sendmail
+		[
+			from: "jobs@ziphire.me"
+			to: tomailID
+			subject: mailSubject
+			message: "<div style='background-color: rgb(255, 255, 255); margin: auto; font: normal 14px lucida grande, lucida sans, lucida sans unicode, arial, helvetica, verdana, sans-serif; border: 1px solid rgb(227, 227, 227); width: 600px; padding: 30px'><div style='color: rgb(118, 118, 118); line-height: 27px'><div style='color: rgb(68, 68, 68)'><div style='padding-top: 24px; font-size: 15px'><div><span class='size' style='font-size:16px'>Dear " + user_name + " <b> , </b> </span> <br></div><div><br></div><div><span class='size' style='font-size:16px'>Thank you for applying for the position of&nbsp; <b> " + job + " </b> <b> &nbsp; </b> from Ziphire HR, and this email is a confirmation that we have received your application. </span> <br></div><div><br></div><div>We hope that you have already attended a general screening interview. If you haven't, please check the mail of the first job you applied for on our platform. <br></div><div><br></div><div>We would be sending you another assessment test if you haven't already given a technical test for similar skills. We will be in touch with you for more updates either via email or WhatsApp. <br></div><div><br></div><div><span class='size' style='font-size:16px'>To browse for more jobs and view the status of your applications, please use our Ziphire&nbsp; <a target='_blank' style='display: inline-block; padding: 5px; border-radius: 8px; background-color: rgb(37, 211, 102); color: rgb(255, 255, 255); text-decoration: none; font-family: sans-serif; font-size: 16px' href=" + waBot + "> <b> WhatsApp </b> </a> &nbsp;Bot. </span> <br></div><div><br></div><div><br></div><div><br></div><div><br></div><div><span class='size' style='font-size:16px'>Best Regards, </span> <br></div><div><span class='size' style='font-size:16px'>Ziphire HR </span> <br></div></div></div></div></div><div><br></div>"
+		]
+	}
+	else if (emINDUSTRY != getINDUSTRY)
+	{
+		paramMap = Map();
+		status = {"EM_MSG_STATUS":msgSTATUS};
+		statusArr = {status};
+		paramMap.put("data",statusArr);
+		//info paramMap.toString();
+		response = invokeurl
+		[
+			url :candidate_link
+			type :PUT
+			parameters:paramMap.toString()
+			connection:"zohorecruitapp"
+			content-type:"application/json"
+		];
+		//fromMailID = "jobs@ziphire.me";
+		tomailID = email;
+		mailSubject = "Application for the position of "+ job +"";
+		waBot = "https://wa.me/97338225544?text=Hi";
+		// send email
+		sendmail
+		[
+			from: "jobs@ziphire.me"
+			to: tomailID
+			subject: mailSubject
+			message: "<div style='background-color: rgb(255, 255, 255); margin: auto; font: normal 14px lucida grande, lucida sans, lucida sans unicode, arial, helvetica, verdana, sans-serif; border: 1px solid rgb(227, 227, 227); width: 600px; padding: 30px'><div style='color: rgb(118, 118, 118); line-height: 27px'><div style='color: rgb(68, 68, 68)'><div style='padding-top: 24px; font-size: 15px'><div><span class='size' style='font-size:16px'>Dear " + user_name + " <b> , </b> </span> <br></div><div><br></div><div><span class='size' style='font-size:16px'>Thank you for applying for the position of&nbsp; <b> " + job + " </b> <b> &nbsp; </b> from Ziphire HR, and this email is a confirmation that we have received your application. </span> <br></div><div><br></div><div>We hope that you have already attended a general screening interview. If you haven't, please check the mail of the first job you applied for on our platform. <br></div><div><br></div><div>We would be sending you another assessment test if you haven't already given a technical test for similar skills. We will be in touch with you for more updates either via email or WhatsApp. <br></div><div><br></div><div><span class='size' style='font-size:16px'>To browse for more jobs and view the status of your applications, please use our Ziphire&nbsp; <a target='_blank' style='display: inline-block; padding: 5px; border-radius: 8px; background-color: rgb(37, 211, 102); color: rgb(255, 255, 255); text-decoration: none; font-family: sans-serif; font-size: 16px' href=" + waBot + "> <b> WhatsApp </b> </a> &nbsp;Bot. </span> <br></div><div><br></div><div><br></div><div><br></div><div><br></div><div><span class='size' style='font-size:16px'>Best Regards, </span> <br></div><div><span class='size' style='font-size:16px'>Ziphire HR </span> <br></div></div></div></div></div><div><br></div>"
+		]
+	}
+}
