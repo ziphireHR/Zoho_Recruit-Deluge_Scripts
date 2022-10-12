@@ -1,0 +1,8 @@
+
+candidate_record = zoho.recruit.getRecordById("Candidates",cand_id);
+cand_first_name = candidate_record.get("First Name");
+cand_last_name = candidate_record.get("Last Name");
+cand_full_name = cand_first_name.concat(" ").concat(cand_last_name);
+map = {"Candidate_Full_Name":cand_full_name};
+update_resp = zoho.recruit.updateRecord("Candidates",cand_id,map);
+info update_resp;
