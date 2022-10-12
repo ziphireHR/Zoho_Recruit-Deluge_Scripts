@@ -1,0 +1,14 @@
+job_record = zoho.recruit.getRecordById("JobOpenings",job_id);
+job_industry = job_record.get("Job Industry");
+if(job_industry == null)
+{
+	map = {"is_industry_check":"false"};
+	update_resp = zoho.recruit.updateRecord("JobOpenings",job_id,map);
+	info update_resp;
+}
+else if(job_industry != null)
+{
+	map = {"is_industry_check":"true"};
+	update_resp = zoho.recruit.updateRecord("JobOpenings",job_id,map);
+	info update_resp;
+}
