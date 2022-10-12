@@ -1,0 +1,82 @@
+
+job_record = zoho.recruit.getRecordById("JobOpenings",job_id);
+job_industry = job_record.get("Job Industry");
+if(job_industry != null)
+{
+	// FINANCE
+	if(job_industry == "Accounting" || job_industry == "Financial Analysis" || job_industry == "Investment Banking" || job_industry == "Portfolio Management")
+	{
+		map = {"Master Industry":"Finance"};
+		update_resp = zoho.recruit.updateRecord("JobOpenings",job_id,map);
+		info update_resp;
+	}
+	// ADMINISTRATION
+	else if(job_industry == "Office Management" || job_industry == "Assistance" || job_industry == "Receptionist" || job_industry == "Clerical")
+	{
+		map = {"Master Industry":"Administration"};
+		update_resp = zoho.recruit.updateRecord("JobOpenings",job_id,map);
+		info update_resp;
+	}
+	// HUMAN RESOURCES
+	else if(job_industry == "Training & Development" || job_industry == "Talent Acquisition and Management" || job_industry == "Workplace Safety" || job_industry == "Clerical")
+	{
+		map = {"Master Industry":"Human Resources"};
+		update_resp = zoho.recruit.updateRecord("JobOpenings",job_id,map);
+		info update_resp;
+	}
+	// HOSPITALITY
+	else if(job_industry == "Waitress/Barista" || job_industry == "Food and Beverages" || job_industry == "Housekeeper" || job_industry == "Porter" || job_industry == "Concierge")
+	{
+		map = {"Master Industry":"Hospitality"};
+		update_resp = zoho.recruit.updateRecord("JobOpenings",job_id,map);
+		info update_resp;
+	}
+	// DESIGN
+	else if(job_industry == "Graphic Design" || job_industry == "UX/UI")
+	{
+		map = {"Master Industry":"Design"};
+		update_resp = zoho.recruit.updateRecord("JobOpenings",job_id,map);
+		info update_resp;
+	}
+	// SALES & MARKETING
+	else if(job_industry == "Marketing" || job_industry == "Digital Marketing" || job_industry == "Advertising & Media" || job_industry == "Public Relations & Communications" || job_industry == "Sales- construction" || job_industry == "Sales- IT" || job_industry == "Sales- Retail" || job_industry == "Sales- Real Estate" || job_industry == "Sales- Automotive")
+	{
+		map = {"Master Industry":"Sales & Marketing"};
+		update_resp = zoho.recruit.updateRecord("JobOpenings",job_id,map);
+		info update_resp;
+	}
+	// IT
+	else if(job_industry == "Full-Stack Development" || job_industry == "Front-End Development" || job_industry == "Back-End Development" || job_industry == "DevOps Development" || job_industry == "Data/Database Administration" || job_industry == "Blockchain Development" || job_industry == "Application Development" || job_industry == "Cloud Computing" || job_industry == "Software Development" || job_industry == "Network Development")
+	{
+		map = {"Master Industry":"IT"};
+		update_resp = zoho.recruit.updateRecord("JobOpenings",job_id,map);
+		info update_resp;
+	}
+	else if(job_industry == "Game Development" || job_industry == "QA Testing" || job_industry == "AI/ML Development" || job_industry == "Software Management")
+	{
+		map = {"Master Industry":"IT"};
+		update_resp = zoho.recruit.updateRecord("JobOpenings",job_id,map);
+		info update_resp;
+	}
+	// MANAGEMENT & CONSULTING
+	else if(job_industry == "Management- IT" || job_industry == "Management- Sales" || job_industry == "Management- Marketing" || job_industry == "Management- Finance" || job_industry == "Management- Customer Service" || job_industry == "Management- Workforce" || job_industry == "Management- Education" || job_industry == "Management- Hospitality" || job_industry == "Management- Design" || job_industry == "Consulting")
+	{
+		map = {"Master Industry":"Management & Consulting"};
+		update_resp = zoho.recruit.updateRecord("JobOpenings",job_id,map);
+		info update_resp;
+	}
+	// CUSTOMER SERVICE
+	else if(job_industry == "Customer Service")
+	{
+		map = {"Master Industry":"Customer Service"};
+		update_resp = zoho.recruit.updateRecord("JobOpenings",job_id,map);
+		info update_resp;
+	}
+	// EDUCATION
+	else if(job_industry == "Teaching" || job_industry == "Education Adminstration")
+	{
+		map = {"Master Industry":"Education"};
+		update_resp = zoho.recruit.updateRecord("JobOpenings",job_id,map);
+		info update_resp;
+	}
+}
