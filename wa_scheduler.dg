@@ -1,0 +1,8 @@
+// script to periodically check whatsapp number
+// fetch candidate data via searchRecords API
+cand_response = invokeUrl
+[
+    url :cand_link
+	type :GET
+	connection:"zohorecruitapp"
+];
