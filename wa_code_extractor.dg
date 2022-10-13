@@ -1,0 +1,16 @@
+
+candidate_id = zoho.recruit.getRecordById("Candidates",cand_id);
+country_code = candidate_id.get("Country Code");
+number = candidate_id.get("Number");
+// conv_number = toString(number);
+if(country_code != null && number != null)
+{
+	co = country_code.getSuffix("(+");
+	co1 = co.getPrefix(")");
+	co_1 = getAlphaNumeric(co1);
+	co2 = getAlphaNumeric(number);
+	cand_wa = co_1.concat(co2);
+	map = {"WA_Number_API":cand_wa};
+	update_resp = zoho.recruit.updateRecord("Candidates",cand_id,map);
+	info update_resp;
+}
