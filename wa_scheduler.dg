@@ -1,8 +1,30 @@
 // script to periodically check whatsapp number
 // fetch candidate data via searchRecords API
-cand_response = invokeUrl
-[
-    url :cand_link
-	type :GET
-	connection:"zohorecruitapp"
-];
+num = Collection("1");
+page = 0;
+count = 0;
+for each record in num
+{
+	page = page + 1;
+	URL = "https://recruit.zoho.com/recruit/v2/Candidates/search?criteria=(Origin:equals:Applied)&page=" + page;
+	response = invokeurl
+	[
+		url :URL
+		type :GET
+		connection:"zohorecruitapp"
+	];
+	// fetching main data from response
+	candidate = response.getJSON("data");
+	information = response.getJSON("info");
+	
+	count = count + information.getJSON("count");
+	more_records = information.getJSON("more_records");
+	/*
+	loop = " .".repeat(count).toList(".");
+	
+	for each ele in loop
+	{.....}
+	*/
+	//info count;
+}
+//info "Total Records: " + count;
