@@ -1,9 +1,9 @@
 // script to periodically check whatsapp number
 // fetch candidate data via searchRecords API
-num = Collection("1");
+num = Collection("1","2");
 page = 0;
 count = 0;
-for each record in num
+for each  record in num
 {
 	page = page + 1;
 	URL = "https://recruit.zoho.com/recruit/v2/Candidates/search?criteria=(Origin:equals:Applied)&page=" + page;
@@ -15,13 +15,96 @@ for each record in num
 	];
 	// fetching main data from response
 	candidate = response.getJSON("data");
+	cand_data_list = candidate.toJSONList();
+	//email_list = List();
+	for each cand in cand_data_list
+	{
+		country_code = cand.getJSON("WhatsApp_Country_Code");
+		default_number = cand.getJSON("WhatsApp_No");
+		whatsapp_no = cand.getJSON("WA_Number_API");
+		cand_id = cand.getJSON("id");
+		linkHeader = "https://recruit.zoho.com/recruit/v2/Candidates";
+		candidate_link = linkHeader.concat("/").concat(cand_id);
+		//
+		//
+		// begin
+		if( (country_code != null) && (default_number != null) )
+		{
+			if (whatsapp_no != null)
+			{
+				waVerify = ("+").concat(phNo);
+				// pass number to Zoho API
+				paramMap = Map();
+				blocking = "wait";
+				number = waVerify;
+				contactArr = {number};
+				force_check = true;
+				paramMap.put("blocking",blocking);
+				paramMap.put("contacts",contactArr);
+				paramMap.put("force_check",force_check);
+				//info paramMap.toString();
+				ver_response = invokeUrl
+				[
+					url: "https://waba.360dialog.io/v1/contacts"
+					type: POST
+					parameters: paramMap.toString()
+					connection: "dialogverify"
+					content-type:"application/json"
+					detailed:true
+				];
+				//
+				//
+				// fetch important keys
+				//verResponseCode = ver_response.getJSON("responseCode");
+				verResponse_main = ver_response.getJSON("responseText");
+				verResponse_main_contacts = verResponse_main.getJSON("contacts");
+				numStatus = verResponse_main_contacts.getJSON("status");
+				//
+				//
+				if (numStatus == "valid")
+				{
+					// change EM_MSG_STATUS to null, WA_NUM_STATUS to valid, BROADCAST_TYPE to WhatsApp
+					paramMap = Map();
+					status = {"WA_NUM_STATUS":numStatus};
+					statusArr = {status};
+					paramMap.put("data",statusArr);
+					//info paramMap.toString();
+					response = invokeurl
+					[
+						url :candidate_link
+						type :PUT
+						parameters:paramMap.toString()
+						connection:"zohorecruitapp"
+						content-type:"application/json"
+					];
+				}
+				else if (numStatus == "invalid")
+				{
+					// change WA_MSG_STATUS to null, WA_NUM_STATUS to invalid, BROADCAST_TYPE to Email
+					paramMap = Map();
+					status = {"WA_NUM_STATUS":numStatus};
+					statusArr = {status};
+					paramMap.put("data",statusArr);
+					//info paramMap.toString();
+					response = invokeurl
+					[
+						url :candidate_link
+						type :PUT
+						parameters:paramMap.toString()
+						connection:"zohorecruitapp"
+						content-type:"application/json"
+					];
+				}
+			}
+		}
+	}
+	/*
 	information = response.getJSON("info");
-	
+	//
 	count = count + information.getJSON("count");
 	more_records = information.getJSON("more_records");
 	/*
 	loop = " .".repeat(count).toList(".");
-	
 	for each ele in loop
 	{.....}
 	*/
